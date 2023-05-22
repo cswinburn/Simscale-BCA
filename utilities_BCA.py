@@ -75,7 +75,9 @@ class ConjugateHeatTransfer():
         self.geometry_path = ""
         
         #Geometry Mapping 
-        self.single_entity     = {} #for later: separate the faces from volumes and add a validation rule against duplicate assignments for the same entity (materials)
+        self.single_entity     = {} #for later: separate the faces from volumes 
+                                    #and add a validation rule against duplicate 
+                                    #assignments for the same entity (materials)
         self.multiple_entities = {}
         
         #Global Simulation Settings
@@ -231,6 +233,7 @@ class ConjugateHeatTransfer():
         #Setup the API configuration (define host and link the associated key)
         configuration = sim_sdk.Configuration()
         configuration.host = self.host
+        configuration.debug = True
         configuration.api_key = {self.api_key_header: self.api_key}
         
         #Setup the API client connection 
@@ -636,7 +639,7 @@ class ConjugateHeatTransfer():
     def set_solid_material_wood(self, solid_name = 'Wood' , key = ''):
         
         self.solid_material.append(    
-                    sim_sdk.SolidCompressibleMaterial(
+                sim_sdk.SolidCompressibleMaterial(
                             name="Wood",
                             transport=sim_sdk.ConstIsoTransport(
                                     type="CONST_ISO",
@@ -1137,7 +1140,7 @@ class ConjugateHeatTransfer():
         #Reset the spec to an intital state to avoid name conflict with the setup of simulations of different CAD
         self.simulation_spec = None 
         
-        model = CoupledConjugateHeatTransfer(
+        self.model = CoupledConjugateHeatTransfer(
             is_compressible= self.compressible,
             turbulence_model= self.turbulence_model,
             model= self.fluid_model_gravity,
@@ -1150,19 +1153,21 @@ class ConjugateHeatTransfer():
         ),
             numerics= self.fluid_numerics,
             
-            #boundary_conditions= self.boundary_conditions
-            #,
-            #advanced_concepts= self.advanced_concepts
-            #,
-            #simulation_control= self.simulation_control
-            #,
-            #result_control= self.result_control 
-            #,
+            boundary_conditions= self.boundary_conditions,
+            advanced_concepts= self.advanced_concepts,
+            simulation_control= self.simulation_control,
+            result_control= self.result_control,
             contact_handling_mode= self.contact_detection
         )
         
-        self.simulation_spec = sim_sdk.SimulationSpec(name= simulation_name, geometry_id= self.geometry_id, model=model)
-        self.simulation_id = self.simulation_api.create_simulation(self.project_id, self.simulation_spec).simulation_id
+        self.simulation_spec = sim_sdk.SimulationSpec(name=simulation_name, 
+                                                      geometry_id=self.geometry_id, 
+                                                      model=self.model)
+        
+    def create_simulation(self):
+        self.simulation_id = self.simulation_api.create_simulation(
+            self.project_id, 
+            self.simulation_spec).simulation_id
         print(f"simulation_id: {self.simulation_id}")
     
     def reset_simulation_spec_components(self):
@@ -1361,7 +1366,7 @@ class ConjugateHeatTransfer():
             else:
                 raise ae
         
-    def create_simulation(self, sim_name ):
+    def create_simulation_run(self, sim_name ):
         
         self.simulation_run = sim_sdk.SimulationRun(name= sim_name)
         self.simulation_run = self.simulation_run_api.create_simulation_run(self.project_id, self.simulation_id, self.simulation_run)

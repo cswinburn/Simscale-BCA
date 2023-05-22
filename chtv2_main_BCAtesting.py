@@ -69,8 +69,8 @@ for body in body_list:
 
 for material in materials_dic.keys():
     print(material)
-    print(materials_dic[material]['conductivity'])    
-    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],key=materials_dic[material]['keys'])
+    print(materials_dic[material]['conductivity'])
+    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],key=materials_dic[material]['keys'][0])
 # BCA- material set up
 # materials={'Insulation':0.035,'Steel':50,'Concrete':2.1}
 # for j, k in materials.items():
@@ -229,7 +229,10 @@ cht.set_result_control_items()
 cht.set_contact_detection(method = "AUTO")
 # #-----------------------------
 # #create simulation
+
 cht.set_simulation_spec( simulation_name = "BCA_API_Test")
+#print(cht.model)
+cht.create_simulation()
 # #-----------------------------    
 # #Mesh settings
 # cht.set_mesh_layer_settings(num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5)
@@ -255,3 +258,4 @@ cht.set_simulation_spec( simulation_name = "BCA_API_Test")
 # cht.get_surface_data_results(data_type = 'average', name = 'inlet-outlet', field = "p")
 # cht.get_surface_data_results(data_type = 'integral', name = 'inlet-outlet_vol', field = "Uy")
 # cht.get_simulation_case_files()
+
