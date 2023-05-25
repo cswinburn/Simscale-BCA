@@ -11,6 +11,8 @@ import simscale_sdk as sim_sdk
 import pandas as pd 
 ##################################
 
+run=1 #Use this to control whether to run or not, 1= run
+
 cht = util.ConjugateHeatTransfer()
 
 """Setup the API connection"""
@@ -60,17 +62,20 @@ for body in body_list:
     for body_attribute in body_attributes:
         if body_attribute.attribute=='ATTRIB_XPARASOLID_NAME':
             body_name=body_attribute.value
-            print(body_name)
+            #print(body_name)
             body_id=body.name
-            print(body_id)
+            #print(body_id)
             for material in materials_dic:
+                #materials_dic[body_name]['keys'].append(body_id) #Testing. Delete this line and uncomment the ones below.
                 if material==body_name:
                     materials_dic[body_name]['keys'].append(body_id)
 
 for material in materials_dic.keys():
-    print(material)
-    print(materials_dic[material]['conductivity'])
-    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],key=materials_dic[material]['keys'][0])
+    #print(material)
+    #print(materials_dic[material]['conductivity'])
+    #print(materials_dic[material]['keys'][0])
+    #print(materials_dic[material]['keys'])
+    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],keys=materials_dic[material]['keys'])
 # BCA- material set up
 # materials={'Insulation':0.035,'Steel':50,'Concrete':2.1}
 # for j, k in materials.items():
@@ -104,24 +109,7 @@ for material in materials_dic.keys():
 
 
 
-faces_list=cht.get_entity_names_BCA(cht.project_id, cht.geometry_id,  _class = 'face',attributes=["SDL/TYSA_COLOUR"])
-#attribute_dict2=geometry_list2[15].originate_from
-for item in faces_list:
-    attribute_dict2=item.originate_from
-    face_colour_str=attribute_dict2[0].attribute_list[0].value   
-    #face_colours = [float(ele) for ele in test]
-    #BCA: Simscale spits out strings of decimals relating to RGB, format these into lists of RGB numbers.
-    test=face_colour_str.replace("[","")
-    #print(test)
-    test=test.replace("]","")
-    #print(test)
-    test = list(test.split(" "))
-    #print(test)
-    test = [float(ele) for ele in test]
-    #print(test)
-    test=[round(ele*255) for ele in test]
-    print(test)
-    
+
 
 
 
@@ -186,6 +174,59 @@ cht.set_initial_conditions()
 #                                            "tool_body_side1", "tool_body_side2",
 #                                            "tool_body_side3", "tool_body_side4"])
 
+#Mock boundary condition dictionary from Grasshopper
+boundary_conditions_dic={'Horizontal Internal':{'temperature':20,'htc':7.69,'type':'internal','colour':[255, 0, 0],'keys':[]},'Horizontal Down':{'temperature':20,'htc':5.89,'type':'internal','colour':[0, 255, 0],'keys':[]},\
+                         'Horizontal Up':{'temperature':20,'type':'internal','htc':10,'colour':[0, 128, 0],'keys':[]},'External':{'temperature':0.001,'htc':25,'type':'external','colour':[0, 0, 255],'keys':[]},\
+                         'External Rainscreen':{'temperature':0.001,'htc':7.69,'type':'external','colour':[0, 100, 0],'keys':[]}}
+
+
+
+
+faces_list=cht.get_entity_names_BCA(cht.project_id, cht.geometry_id,  _class = 'face',attributes=["SDL/TYSA_COLOUR"])
+#attribute_dict2=geometry_list2[15].originate_from
+for item in faces_list:
+    attribute_dict2=item.originate_from
+    face_colour_str=attribute_dict2[0].attribute_list[0].value   
+    #face_colours = [float(ele) for ele in test]
+    #BCA: Simscale spits out strings of decimals relating to RGB, format these into lists of RGB numbers.
+    test=face_colour_str.replace("[","")
+    #print(test)
+    test=test.replace("]","")
+    #print(test)
+    test = list(test.split(" "))
+    #print(test)
+    test = [float(ele) for ele in test]
+    #print(test)
+    test=[round(ele*255) for ele in test]
+    #print(test)
+    for boundary_condition in boundary_conditions_dic.keys():
+        #print(boundary_conditions_dic[boundary_condition]['colour'])
+        #print(test)
+        if test==boundary_conditions_dic[boundary_condition]['colour']:
+            #print("match")
+            #print(item.name)
+            boundary_conditions_dic[boundary_condition]['keys'].append(item.name)
+        #print(materials_dic[material]['conductivity'])
+
+
+ht_surfaces_internal=[]
+ht_surfaces_external=[]
+
+for boundary_condition in boundary_conditions_dic.keys():
+    #print(boundary_conditions_dic[boundary_condition]['temperature'])
+    #print(boundary_conditions_dic[boundary_condition]['htc'])
+    cht.external_wall_heat_flux_bc(amb_temp = boundary_conditions_dic[boundary_condition]['temperature'], htc = boundary_conditions_dic[boundary_condition]['htc'], name = boundary_condition, faces_to_assign=boundary_conditions_dic[boundary_condition]['keys'])
+    if boundary_conditions_dic[boundary_condition]['type']=='internal':
+        ht_surfaces_internal=ht_surfaces_internal+boundary_conditions_dic[boundary_condition]['keys']
+    if boundary_conditions_dic[boundary_condition]['type']=='external':
+        ht_surfaces_external=ht_surfaces_external+boundary_conditions_dic[boundary_condition]['keys']
+        
+cht.set_area_integrals(name = 'Internal', write_interval = 10, faces_to_assign = ht_surfaces_internal)
+cht.set_area_integrals(name = 'External', write_interval = 10, faces_to_assign = ht_surfaces_external)
+    
+    #Compare with boundary 
+
+
 cht.set_boundary_conditions()
 # # print(len(cht.boundary_conditions))
 # # print(cht.boundary_conditions)
@@ -209,13 +250,19 @@ cht.set_simulation_control()
 # cht.set_single_geometry_primitive_point(name = "test_point", pos_x = 0.0420, pos_y= 0.0438, pos_z = 0)
 # probe_points_path = pathlib.Path().cwd() / "probe_points" / "probe_list.txt"
 # cht.set_multiple_geometry_primitive_points(path_to_csv = probe_points_path)
+
+
+
 # #-----------------------------
 # #Define Result Controls 
 # cht.set_area_averages(name = 'inlet-outlet', write_interval = 10, key_list = ["inlet", 'outlet'])
 # cht.set_area_averages(name = 'tool body', write_interval = 10, key_list = ["tool_body_top", "tool_body_bottom",
 #                                                                         "tool_body_side1", "tool_body_side2",
 #                                                                         "tool_body_side3", "tool_body_side4"])
-# cht.set_area_volumes(name = 'inlet-outlet_vol', write_interval = 10, key_list = ["inlet", 'outlet'])
+   # def set_area_integrals(self, name = '', write_interval = 10 , faces_to_assign = ''):
+       
+       
+
 
 # #BCA edit:
 # cht.set_internal_heat_flow_surfaces() #Needs to add the surfaces and the type ie heat flow integral.
@@ -232,7 +279,8 @@ cht.set_contact_detection(method = "AUTO")
 
 cht.set_simulation_spec( simulation_name = "BCA_API_Test")
 #print(cht.model)
-cht.create_simulation()
+if run==1:
+    cht.create_simulation()
 # #-----------------------------    
 # #Mesh settings
 # cht.set_mesh_layer_settings(num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5)

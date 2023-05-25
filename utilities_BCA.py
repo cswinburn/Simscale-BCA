@@ -680,8 +680,8 @@ class ConjugateHeatTransfer():
                     )
 
     
-    #def set_custom_solid_material(self, material_name = '',key = ''):
-    def set_custom_solid_material(self,material_name='',material_conductivity='',key=''):    #BCA Edit- added material conductivity to be passed here
+    #def set_custom_solid_material(self, material_name = '',keys = ''):
+    def set_custom_solid_material(self,material_name='',material_conductivity='',keys=''):    #BCA Edit- added material conductivity to be passed here
         self.solid_material.append( SolidCompressibleMaterial(
                                     name= material_name,
                                     transport=sim_sdk.ConstCrossPlaneOrthotropicTransport(
@@ -720,11 +720,11 @@ class ConjugateHeatTransfer():
                                             ),
                                     ),
                                     topological_reference=sim_sdk.TopologicalReference(
-                                            entities=
-                                                    [
+                                            entities=keys,
+                                                    #[
                                                       #self.single_entity[key] #BCA comment- does this only do a single entity then?
-                                                      key
-                                                      ],
+                                                      #keys
+                                                      #],
                                             sets=[],#Better to put the entities into sets first then just use this?
                                     ),
                                     #built_in_material="builtInAluminium",
@@ -845,37 +845,42 @@ class ConjugateHeatTransfer():
                 ))
 
         
-    def external_wall_heat_flux_bc(self, amb_temp = None , htc = None , heat_flux = None,
+    def external_wall_heat_flux_bc(self, amb_temp = '' , htc = '' , heat_flux = None,
                                    power = None , method = "DERIVED" ,
-                                   name = "stuff_of_the_heat_flux" ,
-                                   key_list = []):
-         
-        faces_to_assign = []
-        for key in key_list: 
-            # print(key)
-            # print(self.single_entity[key])
-            faces_to_assign.append(self.single_entity[key])
-            # print(faces_to_assign)
+                                   name = '' ,
+                                   faces_to_assign = ''):
         
+        #set_custom_solid_material(self,material_name='',material_conductivity='',keys='')
+        
+        # faces_to_assign = []
+        # for key in key_list: 
+        #     print(key)
+        #     print(self.single_entity[key])
+        #     faces_to_assign.append(self.single_entity[key])
+        #     print(faces_to_assign)
+
+
         if method == "DERIVED":
             #for later: add code that allows incorportaing wall thermals into the simulation
-            if amb_temp and htc != None: 
-                self.wall_bc.append(           
-                    sim_sdk.WallBC(
-                            name= name,
-                            velocity=NoSlipVBC(),
-                            temperature=sim_sdk.ExternalWallHeatFluxTBC(
-                                heat_flux = sim_sdk.DerivedHeatFlux( 
-                                    type = "DERIVED",
-                                    heat_transfer_coefficient = sim_sdk.DimensionalThermalTransmittance(value = htc, unit = 'W/(K·m²)'), 
-                                    ambient_temperature = sim_sdk.DimensionalTemperature(value= amb_temp, unit="°C"), 
-                                    additional_heat_flux = None, 
-                                    wall_thermal = None)
-                            ),
-                            topological_reference=TopologicalReference(entities = faces_to_assign),
-                        ))
-            else: 
-               raise Exception("Provide the ambient temperature and heat transfer coefficient values")
+            #if amb_temp and htc != None: #This doesn't work- temps can be zero=none!
+            print(amb_temp)
+            print(htc)
+            self.wall_bc.append(           
+                sim_sdk.WallBC(
+                        name= name,
+                        velocity=NoSlipVBC(),
+                        temperature=sim_sdk.ExternalWallHeatFluxTBC(
+                            heat_flux = sim_sdk.DerivedHeatFlux( 
+                                type = "DERIVED",
+                                heat_transfer_coefficient = sim_sdk.DimensionalThermalTransmittance(value = htc, unit = 'W/(K·m²)'), 
+                                ambient_temperature = sim_sdk.DimensionalTemperature(value= amb_temp, unit="°C"), 
+                                additional_heat_flux = None, 
+                                wall_thermal = None)
+                        ),
+                        topological_reference=TopologicalReference(entities = faces_to_assign),
+                    ))
+            #else: 
+               #raise Exception("Provide the ambient temperature and heat transfer coefficient values")
                 
         elif method == "FIXED":
             if heat_flux != None:
@@ -1036,11 +1041,11 @@ class ConjugateHeatTransfer():
                 topological_reference = sim_sdk.TopologicalReference(entities = faces_to_assign),))
 
 
-    def set_area_volumes(self, name = "Volume average", write_interval = 10 , key_list = []):
+    def set_area_integrals(self, name = '', write_interval = 10 , faces_to_assign = ''):
         
-        faces_to_assign = []
-        for key in key_list: 
-            faces_to_assign.append(self.single_entity[key])
+        # faces_to_assign = []
+        # for key in key_list: 
+        #     faces_to_assign.append(self.single_entity[key])
 
         self.surface_data.append(
             sim_sdk.AreaIntegralResultControl(
@@ -1048,7 +1053,7 @@ class ConjugateHeatTransfer():
                 write_control = sim_sdk.TimeStepWriteControl(write_interval = write_interval),
                 topological_reference = sim_sdk.TopologicalReference(entities = faces_to_assign),))
 
-#BCA Edit
+#BCA Edit- the below doesnt do anything currently. Is an alternative approach.
     def set_internal_heat_flow_surfaces(self, name = "Internal heat flow",write_interval=10, key_list=[]):
         faces_to_assign=[]
         for key in key_list:
@@ -1119,11 +1124,16 @@ class ConjugateHeatTransfer():
         
         
     def set_field_calculations(self):
-        pass
+        self.field_calculations.append(
+        	sim_sdk.FieldCalculationsWallHeatFluxResultControl(
+                type='WALL_HEAT_FLUX', 
+        		name='Boundary Condition Heat Flux',
+        		)
+        	)
     
     def set_result_control_items(self):
         
-        self.result_control = sim_sdk.FluidResultControls(
+        self.result_control = sim_sdk.FluidResultControls( #Why this type? Doesn't seem right.
             surface_data = self.surface_data, 
             probe_points = self.probe_points, 
             field_calculations = self.field_calculations)
