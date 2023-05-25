@@ -110,6 +110,18 @@ for item in faces_list:
             boundary_conditions_dic[boundary_condition]['keys'].append(item.name)
         #print(materials_dic[material]['conductivity'])
 
+ht_surfaces_internal=[]
+ht_surfaces_external=[]
+
+for boundary_condition in boundary_conditions_dic.keys():
+    #print(boundary_conditions_dic[boundary_condition]['temperature'])
+    #print(boundary_conditions_dic[boundary_condition]['htc'])
+    cht.external_wall_heat_flux_bc(amb_temp = boundary_conditions_dic[boundary_condition]['temperature'], htc = boundary_conditions_dic[boundary_condition]['htc'], name = boundary_condition, faces_to_assign=boundary_conditions_dic[boundary_condition]['keys'])
+    if boundary_conditions_dic[boundary_condition]['type']=='internal':
+        ht_surfaces_internal=ht_surfaces_internal+boundary_conditions_dic[boundary_condition]['keys']
+    if boundary_conditions_dic[boundary_condition]['type']=='external':
+        ht_surfaces_external=ht_surfaces_external+boundary_conditions_dic[boundary_condition]['keys']
+
 cht.set_boundary_conditions()
 # # print(len(cht.boundary_conditions))
 # # print(cht.boundary_conditions)
@@ -143,19 +155,6 @@ cht.set_simulation_control()
 """Define Result Controls""" 
 
 # #Set the internal and external measurement surfaces for heat flow.
-
-ht_surfaces_internal=[]
-ht_surfaces_external=[]
-
-for boundary_condition in boundary_conditions_dic.keys():
-    #print(boundary_conditions_dic[boundary_condition]['temperature'])
-    #print(boundary_conditions_dic[boundary_condition]['htc'])
-    cht.external_wall_heat_flux_bc(amb_temp = boundary_conditions_dic[boundary_condition]['temperature'], htc = boundary_conditions_dic[boundary_condition]['htc'], name = boundary_condition, faces_to_assign=boundary_conditions_dic[boundary_condition]['keys'])
-    if boundary_conditions_dic[boundary_condition]['type']=='internal':
-        ht_surfaces_internal=ht_surfaces_internal+boundary_conditions_dic[boundary_condition]['keys']
-    if boundary_conditions_dic[boundary_condition]['type']=='external':
-        ht_surfaces_external=ht_surfaces_external+boundary_conditions_dic[boundary_condition]['keys']
-
 
 cht.set_area_integrals(name = 'Internal', write_interval = 10, faces_to_assign = ht_surfaces_internal)
 cht.set_area_integrals(name = 'External', write_interval = 10, faces_to_assign = ht_surfaces_external)       
