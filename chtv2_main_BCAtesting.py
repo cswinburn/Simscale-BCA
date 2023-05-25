@@ -70,56 +70,7 @@ for body in body_list:
                 if material==body_name:
                     materials_dic[body_name]['keys'].append(body_id)
 
-for material in materials_dic.keys():
-    #print(material)
-    #print(materials_dic[material]['conductivity'])
-    #print(materials_dic[material]['keys'][0])
-    #print(materials_dic[material]['keys'])
-    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],keys=materials_dic[material]['keys'])
-# BCA- material set up
-# materials={'Insulation':0.035,'Steel':50,'Concrete':2.1}
-# for j, k in materials.items():
-#     print(j,"->", k) #Prints the key and value for each material 
-#     cht.set_custom_solid_material(material_name=j,material_conductivity=k,key='')
-
-
-
-#BCA: this line should return geometry info including the face colour
-# #geometry_list=cht.get_entity_names_BCA(cht.project_id, cht.geometry_id, attributes=["SDL/TYSA_COLOUR"])
-# solids_list=cht.get_entity_names_BCA(cht.project_id, cht.geometry_id,  attributes=["ATTRIB_XPARASOLID_NAME"])
-# attribute_dict=solids_list[2].originate_from
-# #print(attribute_dict)
-# body_attributes=attribute_dict[0].attribute_list
-# #print(x)
-# #y=x[2].value
-# #print(y)
-
-# for body_attribute in body_attributes:
-#     if body_attribute.attribute=='ATTRIB_XPARASOLID_NAME':
-#         body_name=body_attribute.value
-#         print(body_name)
-# #BCA- change the SDL/TYSA_NAME to match the ATTRIB_XPARASOLID_NAME name. Does this work? Doesn't seem to change Simscale.
-# for body_attribute in body_attributes:
-#     if body_attribute.attribute!='ATTRIB_XPARASOLID_NAME':
-#         body_attribute.value=body_name
-
-# print(body_attributes)
-
-
-
-
-
-
-
-
-
-
-  
-
-# for key, value in cht.single_entity.items(): 
-#     print("{k} : {v}".format(k = key, v = value))
-
-# """Simulation Setup"""
+"""Simulation Setup"""
 #Global Settings
 cht.set_compressible(state = False)
 cht.set_turbulence_model(model = "KOMEGASST") #KOMEGASST ; NONE (laminar) BCA COMMENT- what do we need here?
@@ -127,60 +78,23 @@ cht.set_gravity_direction(direction = "z", value = -9.81)
 cht.set_initial_conditions()
 
 # #-----------------------------
-# #Define Materials   
+"""Define Materials"""   
    
-# cht.set_fluid_material_water(fluid_name = 'Water', key = "flow_volume") #BCA: Delete this?
-# # cht.set_fluid_material_air(fluid_name = "Air", key = "flow_volume") #BCA: Delete this?
-# cht.set_solid_material_wood(solid_name = "Wood", key = "tool_body") #BCA: Delete this?
-# #BCA added the following: (WHATS THE KEY ABOUT?)
-#cht.set_custom_solid_material(solid_name="insulation",key="insulation",material_conductivity=0.035) #See the utilities script- how do I use the API methods to pass materials and add them?
+for material in materials_dic.keys():
+    #print(material)
+    #print(materials_dic[material]['conductivity'])
+    #print(materials_dic[material]['keys'][0])
+    #print(materials_dic[material]['keys'])
+    cht.set_custom_solid_material(material_name=material,material_conductivity=materials_dic[material]['conductivity'],keys=materials_dic[material]['keys'])
 
 
 
-
-# #BCA- material set up
-# materials={'insulation':0.035,'steel':50,'bread':0.5}
-# for j, k in materials.items():
-#     print(j,"->", k) #Prints the key and value for each material 
-# #   cht.set_custom_solid_material(solid_name="insulation",key="insulation",material_conductivity=0.035)
-
-#cht.set_custom_solid_material(material_name="Insulation",material_conductivity=0.035)
-# BCA- material set up
-# materials={'Insulation':0.035,'Steel':50,'Concrete':2.1}
-# for j, k in materials.items():
-#     print(j,"->", k) #Prints the key and value for each material 
-#     cht.set_custom_solid_material(material_name=j,material_conductivity=k,key='')
-
-# #-----------------------------
-# #Define Boundary Conditions
-# #BCA: This looks a bit easier than materials?
-
-# #BCA Edit: these lines could be used to take a dictionary from a json and push each boundary condition through
-# boundary_conditions={'horizonal_int':{'temperature':20,'htc':7.69},'upward_int':{'temperature':20,'htc':10},'downward_int':{'temperature':20,'htc':10}}
-# for i in boundary_conditions:
-#     print(i)
-#     for j, k in boundary_conditions[i].items():
-#         print(j,"->", k)
-
-# # cht.pressure_inlet_bc(value = 1, temp = 95 ,name = "Pressure Inlet", unit = 'bar', key = "inlet" )
-# cht.pressure_outlet_bc(value = 0 ,name = "Pressure Outlet", unit = 'bar', key = "outlet" )
-
-# cht.constant_velocity_inlet_bc(speed_x = 1, speed_y = 0, speed_z = 2, temp = 10, key = 'inlet')
-
-# cht.external_wall_heat_flux_bc( amb_temp = 20, htc = 10 ,
-#                                method = "DERIVED"  ,  # DERIVED ; FIXED ; FIXED_POWER
-#                                name = 'ExternalWalls', 
-#                                key_list = ["tool_body_top", "tool_body_bottom",
-#                                            "tool_body_side1", "tool_body_side2",
-#                                            "tool_body_side3", "tool_body_side4"])
+"""Define Boundary Conditions"""
 
 #Mock boundary condition dictionary from Grasshopper
 boundary_conditions_dic={'Horizontal Internal':{'temperature':20,'htc':7.69,'type':'internal','colour':[255, 0, 0],'keys':[]},'Horizontal Down':{'temperature':20,'htc':5.89,'type':'internal','colour':[0, 255, 0],'keys':[]},\
                          'Horizontal Up':{'temperature':20,'type':'internal','htc':10,'colour':[0, 128, 0],'keys':[]},'External':{'temperature':0.001,'htc':25,'type':'external','colour':[0, 0, 255],'keys':[]},\
                          'External Rainscreen':{'temperature':0.001,'htc':7.69,'type':'external','colour':[0, 100, 0],'keys':[]}}
-
-
-
 
 faces_list=cht.get_entity_names_BCA(cht.project_id, cht.geometry_id,  _class = 'face',attributes=["SDL/TYSA_COLOUR"])
 #attribute_dict2=geometry_list2[15].originate_from
@@ -208,38 +122,22 @@ for item in faces_list:
             boundary_conditions_dic[boundary_condition]['keys'].append(item.name)
         #print(materials_dic[material]['conductivity'])
 
-
-ht_surfaces_internal=[]
-ht_surfaces_external=[]
-
-for boundary_condition in boundary_conditions_dic.keys():
-    #print(boundary_conditions_dic[boundary_condition]['temperature'])
-    #print(boundary_conditions_dic[boundary_condition]['htc'])
-    cht.external_wall_heat_flux_bc(amb_temp = boundary_conditions_dic[boundary_condition]['temperature'], htc = boundary_conditions_dic[boundary_condition]['htc'], name = boundary_condition, faces_to_assign=boundary_conditions_dic[boundary_condition]['keys'])
-    if boundary_conditions_dic[boundary_condition]['type']=='internal':
-        ht_surfaces_internal=ht_surfaces_internal+boundary_conditions_dic[boundary_condition]['keys']
-    if boundary_conditions_dic[boundary_condition]['type']=='external':
-        ht_surfaces_external=ht_surfaces_external+boundary_conditions_dic[boundary_condition]['keys']
-        
-cht.set_area_integrals(name = 'Internal', write_interval = 10, faces_to_assign = ht_surfaces_internal)
-cht.set_area_integrals(name = 'External', write_interval = 10, faces_to_assign = ht_surfaces_external)
-    
-    #Compare with boundary 
-
-
 cht.set_boundary_conditions()
 # # print(len(cht.boundary_conditions))
 # # print(cht.boundary_conditions)
 # #-----------------------------
-# #Define Simulation Numerics
+"""Define Simulation Numerics"""
+
 cht.set_simulation_numerics()
 # #-----------------------------
-# #Define Advanced Concepts
+"""Define Advanced Concepts"""
 # # cht.set_power_sources(power = 150, name = "power source abs", method = "ABSOLUTE", key_list = ["tool_body"])
 # # cht.set_power_sources(power = 1000, name = "power source vol", method = "SPECIFIC", key_list = ["flow_volume"])
 cht.set_advanced_concepts()
+
 # #-----------------------------
-# #Define Simulation Control Settings
+
+"""Define Simulation Control Settings"""
 cht.set_simulation_end_time(time = 1000)
 cht.set_simulation_time_step(time_step = 1)
 cht.set_simulation_write_controls(write_interval = 1000)
@@ -254,35 +152,51 @@ cht.set_simulation_control()
 
 
 # #-----------------------------
-# #Define Result Controls 
-# cht.set_area_averages(name = 'inlet-outlet', write_interval = 10, key_list = ["inlet", 'outlet'])
-# cht.set_area_averages(name = 'tool body', write_interval = 10, key_list = ["tool_body_top", "tool_body_bottom",
-#                                                                         "tool_body_side1", "tool_body_side2",
-#                                                                         "tool_body_side3", "tool_body_side4"])
-   # def set_area_integrals(self, name = '', write_interval = 10 , faces_to_assign = ''):
-       
-       
+"""Define Result Controls""" 
+
+# #Set the internal and external measurement surfaces for heat flow.
+
+ht_surfaces_internal=[]
+ht_surfaces_external=[]
+
+for boundary_condition in boundary_conditions_dic.keys():
+    #print(boundary_conditions_dic[boundary_condition]['temperature'])
+    #print(boundary_conditions_dic[boundary_condition]['htc'])
+    cht.external_wall_heat_flux_bc(amb_temp = boundary_conditions_dic[boundary_condition]['temperature'], htc = boundary_conditions_dic[boundary_condition]['htc'], name = boundary_condition, faces_to_assign=boundary_conditions_dic[boundary_condition]['keys'])
+    if boundary_conditions_dic[boundary_condition]['type']=='internal':
+        ht_surfaces_internal=ht_surfaces_internal+boundary_conditions_dic[boundary_condition]['keys']
+    if boundary_conditions_dic[boundary_condition]['type']=='external':
+        ht_surfaces_external=ht_surfaces_external+boundary_conditions_dic[boundary_condition]['keys']
 
 
-# #BCA edit:
+cht.set_area_integrals(name = 'Internal', write_interval = 10, faces_to_assign = ht_surfaces_internal)
+cht.set_area_integrals(name = 'External', write_interval = 10, faces_to_assign = ht_surfaces_external)       
+       
+# #Alternative approach as below. Better?
 # cht.set_internal_heat_flow_surfaces() #Needs to add the surfaces and the type ie heat flow integral.
 # #cht.set_external_heat_flow_surfaces() #As above
 
 # cht.set_probe_points(name = 'test_probe', source = "single") #single ; multiple
 # cht.set_probe_points(name = 'multi_test_probe', source = "multiple") #single ; multiple
-cht.set_result_control_items()
+
+cht.set_field_calculations() #Adds the heat flux field calc to the sim
+cht.set_result_control_items() #Sets up the result control
+
 # #-----------------------------
-# #Contact Detection
+"""Contact Detection"""
+
 cht.set_contact_detection(method = "AUTO")
+
 # #-----------------------------
-# #create simulation
+"""Create simulation"""
 
 cht.set_simulation_spec( simulation_name = "BCA_API_Test")
 #print(cht.model)
 if run==1:
     cht.create_simulation()
+    
 # #-----------------------------    
-# #Mesh settings
+"""Mesh settings"""
 # cht.set_mesh_layer_settings(num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5)
 # cht.set_advanced_mesh_settings(small_feature_tolerance = 5E-5, gap_ref_factor = 0.05, gradation_rate = 1.22)
 # cht.complete_mesh_settings(mesh_name = "Mesh_test", fineness = 0.1, physics_based_meshing = True)
@@ -291,14 +205,16 @@ if run==1:
 # #-----------------------------    
 # #Sanity checks
 # cht.check_simulation_and_mesh_settings()
+
 # #-----------------------------
-# #Start Simulation
+"""Start Simulation"""
 # # cht.find_simulation(name = "Get_Results")
 # cht.estimate_simulation(maximum_cpu_consumption_limit = 200)
 # cht.create_simulation(sim_name = "Results_test")
 # cht.start_simulation_run(run_state = False)
 # #-----------------------------
-# #Download Results
+
+"""Download Results"""
 # cht.get_simulation_results()
 # cht.get_probe_point_results(name = "test_probe", field = 'T')
 # cht.get_probe_point_results(name = "multi_test_probe", field = 'T')
