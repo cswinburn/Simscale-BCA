@@ -37,18 +37,6 @@ cht.upload_geometry('API Test Geometry-Export') # Utilities script checks if thi
 
 """Define geometry mappings"""
 
-#volume_cad  = {"flow_volume" : "Flow_Volume", "tool_body" : "Tool_Body"}
-#surface_cad = {"inlet": "NS_Inlet", "outlet": "NS_Outlet", "tool_body_top": "NS_Top", "tool_body_bottom": "NS_Bottom", 
-#               "tool_body_side1" : "NS_Side1", "tool_body_side2" : "NS_Side2", "tool_body_side3": "NS_Side3", "tool_body_side4": "NS_Side4"}
-
-#Get the entity ID associated with each CAD part 
-#for key, value in volume_cad.items(): 
-#    cht.get_single_entity_name(cht.project_id, cht.geometry_id, key = key, attributes=["SDL/TYSA_NAME"], values=[value])
-#Get the entity ID associated with each predefined surface
-#for key, value in surface_cad.items():
-#    cht.get_single_entity_name(cht.project_id, cht.geometry_id, key = key ,_class = 'face' ,attributes=["SDL/TYSA_NAME"], values=[value])
-#list_of_surfaces=cht.get_single_entity_name(project_id, geometry_id, key, kwargs)
-
 #Mock materials dictionary from Grasshopper
 materials_dic={'Concrete':{'conductivity':2.1,'keys':[]},'Insulation':{'conductivity':0.035,'keys':[]},'Steel':{'conductivity':50,'keys':[]}}
 
@@ -103,20 +91,20 @@ for item in faces_list:
     face_colour_str=attribute_dict2[0].attribute_list[0].value   
     #face_colours = [float(ele) for ele in test]
     #BCA: Simscale spits out strings of decimals relating to RGB, format these into lists of RGB numbers.
-    test=face_colour_str.replace("[","")
+    face_colour_RGB=face_colour_str.replace("[","")
     #print(test)
-    test=test.replace("]","")
+    face_colour_RGB=face_colour_RGB.replace("]","")
     #print(test)
-    test = list(test.split(" "))
+    face_colour_RGB = list(face_colour_RGB.split(" "))
     #print(test)
-    test = [float(ele) for ele in test]
+    face_colour_RGB = [float(ele) for ele in face_colour_RGB]
     #print(test)
-    test=[round(ele*255) for ele in test]
+    face_colour_RGB=[round(ele*255) for ele in face_colour_RGB]
     #print(test)
     for boundary_condition in boundary_conditions_dic.keys():
         #print(boundary_conditions_dic[boundary_condition]['colour'])
         #print(test)
-        if test==boundary_conditions_dic[boundary_condition]['colour']:
+        if face_colour_RGB==boundary_conditions_dic[boundary_condition]['colour']:
             #print("match")
             #print(item.name)
             boundary_conditions_dic[boundary_condition]['keys'].append(item.name)
@@ -197,9 +185,9 @@ if run==1:
     
 # #-----------------------------    
 """Mesh settings"""
-# cht.set_mesh_layer_settings(num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5)
-# cht.set_advanced_mesh_settings(small_feature_tolerance = 5E-5, gap_ref_factor = 0.05, gradation_rate = 1.22)
-# cht.complete_mesh_settings(mesh_name = "Mesh_test", fineness = 0.1, physics_based_meshing = True)
+cht.set_mesh_layer_settings(num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5)
+cht.set_advanced_mesh_settings(small_feature_tolerance = 5E-5, gap_ref_factor = 0.05, gradation_rate = 1.22)
+cht.complete_mesh_settings(mesh_name = "Mesh_test", fineness = 0.1, physics_based_meshing = True)
 # cht.estimate_mesh_operation()
 # cht.start_meshing_operation(run_state = False)
 # #-----------------------------    
