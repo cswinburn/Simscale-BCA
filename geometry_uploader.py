@@ -1,22 +1,50 @@
 import os
-import simscale_sdk as sim_sdk
 import time
+import zipfile
+import pathlib
+import isodate
+import urllib3
+import shutil
+#import pandas as pd #Don't think we need this for now. Doesn't work in Rhino currently.
+
+from simscale_sdk import Configuration, ApiClient, ProjectsApi, StorageApi, GeometryImportsApi, GeometriesApi, \
+    MeshOperationsApi, SimulationsApi, SimulationRunsApi, ReportsApi, Project, GeometryImportRequest, ApiException, \
+    MaterialsApi, MaterialGroupType, MaterialUpdateRequest, MaterialUpdateOperation, MaterialUpdateOperationReference
+from simscale_sdk import ConvectiveHeatTransfer, CoupledConjugateHeatTransfer, FluidModel, DimensionalVectorAcceleration, FluidInitialConditions, \
+    AdvancedConcepts, ConvectiveHeatTransferMaterials, CoupledConjugateHeatTransferMaterials, TopologicalReference, \
+    FluidNumerics, RelaxationFactor, DimensionalPressure, ResidualControls, Tolerance, \
+    FluidSolvers, Schemes, TimeDifferentiationSchemes, GradientSchemes, DivergenceSchemes, LaplacianSchemes, \
+    InterpolationSchemes, SurfaceNormalGradientSchemes, VelocityInletBC, FixedValueVBC, DimensionalVectorFunctionSpeed, \
+    ComponentVectorFunction, ConstantFunction, FixedValueTBC, DimensionalFunctionTemperature, PressureOutletBC, \
+    FixedValuePBC, DimensionalFunctionPressure, WallBC, NoSlipVBC, FluidSimulationControl, DimensionalTime, \
+    TimeStepWriteControl, ScotchDecomposeAlgorithm, FluidResultControls, AreaAverageResultControl, \
+    ProbePointsResultControl, AbsolutePowerSource, DimensionalFunctionPower, IncompressibleMaterial, NewtonianViscosityModel, DimensionalKinematicViscosity, \
+    DimensionalDensity, DimensionalThermalExpansionRate, DimensionalTemperature, DimensionalSpecificHeat, PBICGSolver, DILUPreconditioner, ILUCpPreconditioner, \
+    SolidCompressibleMaterial, ConstIsoTransport, IsotropicConductivity, DimensionalFunctionThermalConductivity, \
+    DimensionalSpecificHeat, HConstThermo, RhoConstEquationOfState, AutomaticMeshSizingSimmetrix, CrossPlaneOrthotropicConductivity, ConstCrossPlaneOrthotropicTransport
+
+    
+from simscale_sdk import GeometryImportRequestLocation, GeometryImportRequestOptions, Point, DimensionalVectorLength, \
+    DecimalVector
+from simscale_sdk import SimulationSpec, MeshOperation, SimmetrixMeshingFluid, AutomaticLayerOn, SimulationRun
+from simscale_sdk import UserInputCameraSettings, ProjectionType, Vector3D, ModelSettings, Part, ScalarField, \
+    ScreenshotOutputSettings, Color, ResolutionInfo, ScreenshotReportProperties, ReportRequest
+    
+import simscale_sdk as sim_sdk
+
 
 class GeometryUploader:
     def __init__(self, api_client, project_id):
+        
         self.api_client = api_client
         self.project_id = project_id
+
+        #Define the required API clients for the simulation 
         
+        self.storage_api = sim_sdk.StorageApi(self.api_client)
         self.geometry_import_api = sim_sdk.GeometryImportsApi(self.api_client)
         self.geometry_api = sim_sdk.GeometriesApi(self.api_client)
-        self.mesh_operation_api = sim_sdk.MeshOperationsApi(self.api_client)
-        self.materials_api = sim_sdk.MaterialsApi(self.api_client)
-        self.simulation_api = sim_sdk.SimulationsApi(self.api_client)
-        self.simulation_run_api = sim_sdk.SimulationRunsApi(self.api_client)
-        self.table_import_api = sim_sdk.TableImportsApi(self.api_client)
-        self.reports_api = sim_sdk.ReportsApi(self.api_client) 
-        self.wind_api = sim_sdk.WindApi(self.api_client)
-     
+        
     def upload_geometry(self, name, path=None, units="m", _format="STEP"): #BCA- major changes to this section
             
             '''

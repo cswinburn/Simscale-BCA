@@ -1,7 +1,38 @@
 import os
-import simscale_sdk as sim_sdk
+import time
+import zipfile
+import pathlib
+import isodate
 import urllib3
+import shutil
+#import pandas as pd #Don't think we need this for now. Doesn't work in Rhino currently.
 
+from simscale_sdk import Configuration, ApiClient, ProjectsApi, StorageApi, GeometryImportsApi, GeometriesApi, \
+    MeshOperationsApi, SimulationsApi, SimulationRunsApi, ReportsApi, Project, GeometryImportRequest, ApiException, \
+    MaterialsApi, MaterialGroupType, MaterialUpdateRequest, MaterialUpdateOperation, MaterialUpdateOperationReference
+from simscale_sdk import ConvectiveHeatTransfer, CoupledConjugateHeatTransfer, FluidModel, DimensionalVectorAcceleration, FluidInitialConditions, \
+    AdvancedConcepts, ConvectiveHeatTransferMaterials, CoupledConjugateHeatTransferMaterials, TopologicalReference, \
+    FluidNumerics, RelaxationFactor, DimensionalPressure, ResidualControls, Tolerance, \
+    FluidSolvers, Schemes, TimeDifferentiationSchemes, GradientSchemes, DivergenceSchemes, LaplacianSchemes, \
+    InterpolationSchemes, SurfaceNormalGradientSchemes, VelocityInletBC, FixedValueVBC, DimensionalVectorFunctionSpeed, \
+    ComponentVectorFunction, ConstantFunction, FixedValueTBC, DimensionalFunctionTemperature, PressureOutletBC, \
+    FixedValuePBC, DimensionalFunctionPressure, WallBC, NoSlipVBC, FluidSimulationControl, DimensionalTime, \
+    TimeStepWriteControl, ScotchDecomposeAlgorithm, FluidResultControls, AreaAverageResultControl, \
+    ProbePointsResultControl, AbsolutePowerSource, DimensionalFunctionPower, IncompressibleMaterial, NewtonianViscosityModel, DimensionalKinematicViscosity, \
+    DimensionalDensity, DimensionalThermalExpansionRate, DimensionalTemperature, DimensionalSpecificHeat, PBICGSolver, DILUPreconditioner, ILUCpPreconditioner, \
+    SolidCompressibleMaterial, ConstIsoTransport, IsotropicConductivity, DimensionalFunctionThermalConductivity, \
+    DimensionalSpecificHeat, HConstThermo, RhoConstEquationOfState, AutomaticMeshSizingSimmetrix, CrossPlaneOrthotropicConductivity, ConstCrossPlaneOrthotropicTransport
+
+    
+from simscale_sdk import GeometryImportRequestLocation, GeometryImportRequestOptions, Point, DimensionalVectorLength, \
+    DecimalVector
+from simscale_sdk import SimulationSpec, MeshOperation, SimmetrixMeshingFluid, AutomaticLayerOn, SimulationRun
+from simscale_sdk import UserInputCameraSettings, ProjectionType, Vector3D, ModelSettings, Part, ScalarField, \
+    ScreenshotOutputSettings, Color, ResolutionInfo, ScreenshotReportProperties, ReportRequest
+    
+import simscale_sdk as sim_sdk
+
+    
 class APIKeyManager:
     def __init__(self):
 
@@ -12,6 +43,29 @@ class APIKeyManager:
         self.version        = "/v0"
         self.host           = ""
         self.server         = "prod"
+        
+        #Client Variables
+        self.api_client  = None
+        self.project_api = None
+        self.storage_api = None
+        self.geometry_import_api = None
+        self.geometry_api = None
+        self.materials_api = None 
+        self.mesh_operation_api = None 
+        self.simulation_api = None
+        self.simulation_run_api = None
+        self.table_import_api =None
+        self.reports_api = None
+        
+        #Project Variables 
+        self.project_name = ""
+        self.project_id   = ""
+        
+        #Geometry Variables
+        self.geometry_name = ""
+        self.geometry_id   = ""
+        self.geometry_path = ""
+        
         
     def _get_variables_from_env(self):
         
@@ -37,7 +91,7 @@ class APIKeyManager:
             print(self.api_url)
             self.host = self.api_url + self.version
         except:
-            raise Exception("Cannot get Keys from Environment Variables")
+            raise Exception("Cannot get Keys from Environment Variables!")
 
     def check_api(self):
         '''
@@ -86,10 +140,10 @@ class APIKeyManager:
     
         '''
         #Get the API url and key variables from env variables and do a sanity check 
-        #self._get_variables_from_env()
+        self._get_variables_from_env()
         
         #BCA change- don't need the below for the moment.
-        #self.check_api()
+        self.check_api()
         
         #Setup the API configuration (define host and link the associated key)
         configuration = sim_sdk.Configuration()
@@ -101,6 +155,10 @@ class APIKeyManager:
         self.api_client = sim_sdk.ApiClient(configuration)
         retry_policy = urllib3.Retry(connect=5, read=5, redirect=0, status=5, backoff_factor=0.2)
         self.api_client.rest_client.pool_manager.connection_pool_kw["retries"] = retry_policy
+
+        
+       
+        
        
         
 
