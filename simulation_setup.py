@@ -1024,48 +1024,8 @@ class SimulationSetup:
             self.simulation_api.update_simulation(self.project_id, self.simulation_id, self.simulation_spec)
 
 
-    def estimate_simulation(self, maximum_cpu_consumption_limit = 200):
+    
         
-        try:
-            estimation = self.simulation_api.estimate_simulation_setup(self.project_id, self.simulation_id)
-            # print(f"Simulation estimation: {estimation}")
-            
-            print("*"*10)
-            print("CPU consumption: {lower} - {upper}. Expected is {avg}\n".format(
-                                                               lower =  estimation.compute_resource.interval_min, 
-                                                               upper =  estimation.compute_resource.interval_max,
-                                                               avg   =  estimation.compute_resource.value))
-            
-            print("Duration: {lower} - {upper}. Expected is {avg}\n".format(
-                                                               lower =  estimation.duration.interval_min.replace('PT',''), 
-                                                               upper =  estimation.duration.interval_max.replace('PT', ''),
-                                                               avg   =  estimation.duration.value.replace('PT','')))          
-            print("*"*10)
-            
-            if estimation.compute_resource is not None and estimation.compute_resource.value > maximum_cpu_consumption_limit:
-                raise Exception("Too expensive", estimation)
-        
-            if estimation.duration is not None:
-                self.sim_max_run_time = isodate.parse_duration(estimation.duration.interval_max).total_seconds()
-                self.sim_max_run_time = max(3600, self.sim_max_run_time * 2)
-            else:
-                self.sim_max_run_time = 36000
-                print(f"Simulation estimated duration not available, assuming max runtime of {self.sim_max_run_time} seconds")
-        except ApiException as ae:
-            if ae.status == 422:
-                self.sim_max_run_time = 36000
-                print(f"Simulation estimation not available, assuming max runtime of {self.sim_max_run_time} seconds")
-            else:
-                raise ae
-        
-    def create_simulation_run(self, sim_name ):
-        self.simulation_run = sim_sdk.SimulationRun(name= sim_name)
-        self.simulation_run = self.simulation_run_api.create_simulation_run(self.project_id, self.simulation_id, self.simulation_run) #ERROR HERE
-        self.run_id = self.simulation_run.run_id
-        print(f"runId: {self.run_id}")
-        
-        # Read simulation run and update with the deserialized model
-        self.simulation_run = self.simulation_run_api.get_simulation_run(self.project_id, self.simulation_id, self.run_id)
-        self.simulation_run_api.update_simulation_run(self.project_id, self.simulation_id, self.run_id, self.simulation_run)
+    
 
 
