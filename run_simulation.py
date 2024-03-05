@@ -34,11 +34,12 @@ import simscale_sdk as sim_sdk
 
 
 class RunSimulation:
-    def __init__(self, simulation_run_api, project_id, simulation_api):
+    def __init__(self, simulation_run_api, project_id, simulation_api, api_client):
          
         self.simulation_run_api = simulation_run_api
         self.project_id = project_id
         self.simulation_api = simulation_api
+        self.api_client = api_client
           
          
     def find_simulation(self, name):
