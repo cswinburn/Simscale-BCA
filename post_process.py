@@ -4,24 +4,20 @@ import time
 import zipfile
 import csv
 from io import StringIO
-import os
 import simscale_sdk as sim_sdk
 
 class PostProcess:
     def __init__(self, api_client, project_api, api_key, api_key_header):
         self.api_key = api_key
         self.api_key_header = api_key_header
-        #self.sim_name = sim_name
+
         self.api_client= api_client
         self.simulation_run_api = sim_sdk.SimulationRunsApi(self.api_client)
         self.simulation_run = None
         self.simulation_runs = None
         self.project_api = project_api
         self.simulation_api = sim_sdk.SimulationsApi(self.api_client)
-        #Define the required API clients for the simulation 
-        #self.project_api = project_api
-        #self.project_id = project_id
-        #self.simulation_api = simulation_api
+
         self.simulation_id = None
         self.run_id = None
         self.api_client = api_client

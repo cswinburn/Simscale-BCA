@@ -1,35 +1,4 @@
-import os
-import time
-import zipfile
-import pathlib
-import isodate
-import urllib3
-import shutil
-#import pandas as pd #Don't think we need this for now. Doesn't work in Rhino currently.
-
-from simscale_sdk import Configuration, ApiClient, ProjectsApi, StorageApi, GeometryImportsApi, GeometriesApi, \
-    MeshOperationsApi, SimulationsApi, SimulationRunsApi, ReportsApi, Project, GeometryImportRequest, ApiException, \
-    MaterialsApi, MaterialGroupType, MaterialUpdateRequest, MaterialUpdateOperation, MaterialUpdateOperationReference
-from simscale_sdk import ConvectiveHeatTransfer, CoupledConjugateHeatTransfer, FluidModel, DimensionalVectorAcceleration, FluidInitialConditions, \
-    AdvancedConcepts, ConvectiveHeatTransferMaterials, CoupledConjugateHeatTransferMaterials, TopologicalReference, \
-    FluidNumerics, RelaxationFactor, DimensionalPressure, ResidualControls, Tolerance, \
-    FluidSolvers, Schemes, TimeDifferentiationSchemes, GradientSchemes, DivergenceSchemes, LaplacianSchemes, \
-    InterpolationSchemes, SurfaceNormalGradientSchemes, VelocityInletBC, FixedValueVBC, DimensionalVectorFunctionSpeed, \
-    ComponentVectorFunction, ConstantFunction, FixedValueTBC, DimensionalFunctionTemperature, PressureOutletBC, \
-    FixedValuePBC, DimensionalFunctionPressure, WallBC, NoSlipVBC, FluidSimulationControl, DimensionalTime, \
-    TimeStepWriteControl, ScotchDecomposeAlgorithm, FluidResultControls, AreaAverageResultControl, \
-    ProbePointsResultControl, AbsolutePowerSource, DimensionalFunctionPower, IncompressibleMaterial, NewtonianViscosityModel, DimensionalKinematicViscosity, \
-    DimensionalDensity, DimensionalThermalExpansionRate, DimensionalTemperature, DimensionalSpecificHeat, PBICGSolver, DILUPreconditioner, ILUCpPreconditioner, \
-    SolidCompressibleMaterial, ConstIsoTransport, IsotropicConductivity, DimensionalFunctionThermalConductivity, \
-    DimensionalSpecificHeat, HConstThermo, RhoConstEquationOfState, AutomaticMeshSizingSimmetrix, CrossPlaneOrthotropicConductivity, ConstCrossPlaneOrthotropicTransport
-
-    
-from simscale_sdk import GeometryImportRequestLocation, GeometryImportRequestOptions, Point, DimensionalVectorLength, \
-    DecimalVector
-from simscale_sdk import SimulationSpec, MeshOperation, SimmetrixMeshingFluid, AutomaticLayerOn, SimulationRun
-from simscale_sdk import UserInputCameraSettings, ProjectionType, Vector3D, ModelSettings, Part, ScalarField, \
-    ScreenshotOutputSettings, Color, ResolutionInfo, ScreenshotReportProperties, ReportRequest
-    
+import shutil    
 import simscale_sdk as sim_sdk
 
 class FolderNavigation:
