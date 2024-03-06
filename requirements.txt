@@ -1,0 +1,2 @@
+simscale-sdk @ git+https://github.com/SimScaleGmbH/simscale-python-sdk.git@6.0.0
+
