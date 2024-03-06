@@ -150,23 +150,6 @@ class PostProcess:
 
         return area_average_results_csv
 
-        # # Write area averages to CSV file
-        # area_average_result_path = pathlib.Path(dir_name)
-        # try:
-        #     #check if the directory already exists if not create a new one and store in it 
-        #     area_average_result_path.mkdir(parents = True, exist_ok = False)
-        #     print("D")
-        #     write_to = area_average_result_path / "{n}_{f}.csv".format(n = name, f = field)
-        #     with open(write_to, "w") as file:
-        #         file.write(area_average_results_csv)
-        #     return area_average_results_csv
-        # except: 
-        #     #write to the already existing directory +
-        #     area_average_result_path.mkdir(parents = True, exist_ok = True)
-        #     write_to = area_average_result_path / "{n}_{f}.csv".format(n = name, f = field)
-        #     with open(write_to, "w") as file:
-        #         file.write(area_average_results_csv)
-        #     return area_average_results_csv
         
     def get_simulation_case_files(self): 
         
@@ -181,6 +164,8 @@ class PostProcess:
     def get_simulation_report(self, part_id = "region1"):
         self.reports_api = sim_sdk.ReportsApi(self.api_client) 
         self.solution_info = [r for r in self.simulation_results._embedded if r.category == "SOLUTION"][0]
+
+        home_dir = pathlib.Path.home()
         
         # Generating simulation run report
         camera_settings = sim_sdk.UserInputCameraSettings(
@@ -193,7 +178,7 @@ class PostProcess:
         # "Temperature", component="X", data_type="CELL"
         model_settings = sim_sdk.ModelSettings(
             parts=[sim_sdk.Part(part_identifier= part_id, solid_color=sim_sdk.Color(0.8, 0.2, 0.4))],
-            scalar_field=sim_sdk.ScalarField(field_name= "Velocity", component="X", data_type="CELL"),
+            #scalar_field=sim_sdk.ScalarField(field_name= "Velocity", component="X", data_type="CELL"),
         )
         output_settings = sim_sdk.ScreenshotOutputSettings(name="Output 1", format="PNG", resolution=sim_sdk.ResolutionInfo(800, 800),
                                                    frame_index=0)
@@ -230,7 +215,7 @@ class PostProcess:
                 _preload_content=False,
             )
         
-            file_name = f"report.{report.download.format}"
+            file_name = home_dir / f"report.{report.download.format}"
             with open(file_name, "wb") as file:
                 file.write(report_response.data)
                 print(f"Finished downloading report with name {file_name}")
