@@ -3,8 +3,11 @@ import subprocess
 import os
 
 def install_dependencies():
-    # Assuming this script is run from the directory where it's located
-    repo_dir = os.path.dirname(os.path.abspath(__file__))
+    # Get the directory containing the script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Navigate up one directory level to the site-packages directory
+    target_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
+
     dependencies = [
         "certifi>=2024.2.2",
         "isodate>=0.6.1",
@@ -16,8 +19,8 @@ def install_dependencies():
 
     for dep in dependencies:
         subprocess.check_call([
-            "pip", "install", dep, 
-            "--target", repo_dir
+            "pip", "install", dep,
+            "--target", target_dir
         ])
 
 if __name__ == "__main__":
