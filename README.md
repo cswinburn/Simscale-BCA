@@ -25,7 +25,7 @@ git clone https://github.com/cswinburn/Simscale-BCA.git
 
 ## Step 2: Install Dependencies
 
-##### Run the following command: 
+##### From the same command line window run the following command: 
 cd Simscale-BCA
 
 ##### Followed by:
