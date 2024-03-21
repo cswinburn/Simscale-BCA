@@ -20,7 +20,7 @@ cd C:\Users\USERNAME\\.rhinocode\py39-rh8\lib\site-packages
 
 Then run
 
-git clone https://github.com/cswinburn/Simscale-BCA.git
+git clone https://github.com/cswinburn/Simscale-BCA.git simscale_BCA
 
 
 ## Step 2: Install Dependencies
