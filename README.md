@@ -38,8 +38,11 @@ This will install the dependencies to the correct location so python3 inside Rhi
 ## Step 3: Set API key locally on your PC
 Type 'Edit system environment variables in windows search' open this then navigate to  Environment Variables > System variables > New 
 and add the following two system variables: 
-1) Variable: SIMSCALE_API_KEY     Key: XXX (replace with your actual API key provided by Simscale)
-2) Variable: SIMSCALE_API_URL     Key: https://api.simscale.com
+1) Variable: SIMSCALE_API_KEY
+   Key: XXX (replace with your actual API key provided by Simscale)
+   
+2) Variable: SIMSCALE_API_URL
+   Key: https://api.simscale.com
 
 Click Save and close window.
 
