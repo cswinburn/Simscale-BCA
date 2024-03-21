@@ -26,7 +26,7 @@ git clone https://github.com/cswinburn/Simscale-BCA.git simscale_BCA
 ## Step 2: Install Dependencies
 
 ##### From the same command line window run the following command: 
-cd Simscale-BCA
+cd simscale_BCA
 
 ##### Followed by:
 python install_deps.py
