@@ -67,14 +67,10 @@ class GeometryUploader:
                     name=name + '1' #Add a 1 to show it is a new geometry (needs a better way)
                     break
                         
-            #if found is None:
-            #    raise Exception('could not find geometry with id: ' + name)
-                
-            #self.geometry_name = found
-            #self.geometry_id = found["geometry_id"]
-            #print("Cannot upload geometry with the same name, using existing geometry")
-                
+            # If no geometry is found, proceed with the upload
             self.geometry_path = path
+            if not self.geometry_path:
+                raise ValueError("Geometry path must be provided")
 
             storage = self.storage_api.create_storage()
             with open(self.geometry_path, 'rb') as file:

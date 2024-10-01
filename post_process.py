@@ -7,74 +7,70 @@ from io import StringIO
 import simscale_sdk as sim_sdk
 
 class PostProcess:
-    def __init__(self, api_client, project_api, api_key, api_key_header):
+    def __init__(self, api_client, project_name, sim_name, run_name, api_key, api_key_header):
+        """
+        Initialize PostProcess class with project, simulation, and run names.
+        Fetches project_id, simulation_id, and run_id based on the names provided.
+        """
         self.api_key = api_key
         self.api_key_header = api_key_header
+        self.api_client = api_client
 
-        self.api_client= api_client
         self.simulation_run_api = sim_sdk.SimulationRunsApi(self.api_client)
         self.simulation_run = None
         self.simulation_runs = None
-        self.project_api = project_api
+        self.project_api = sim_sdk.ProjectsApi(self.api_client)
         self.simulation_api = sim_sdk.SimulationsApi(self.api_client)
-
-        self.simulation_id = None
-        self.run_id = None
-        self.api_client = api_client
-
-        #Simulation Results Download Variables 
-        self.simulation_results = None 
-        self.probe_point_plot_info = None 
-        self.probe_point_plot_data_response = None
-        self.solution_info = None
-        self.reports_api = None
-
-    def get_simulation_results(self, name, sim_name, run_name): 
-        #Check if the project already exists
-        projects = self.project_api.get_projects(limit=1000).to_dict()['embedded']
-        found = None
-        for project in projects:
-            if project['name'] == name:
-                found = project
-                print('Project found: \n' + str(found['name']))
-                break
-        if found is None:
-            raise Exception('could not find project with name: ' + name)
         
-        self.project_id = found['project_id']
-        self.project_name = name
-        print("Cannot create project with the same name, using existing project")
+        # Set project, simulation, and run names
+        self.project_name = project_name
+        self.sim_name = sim_name
+        self.run_name = run_name
+        
+        # Fetch project_id, simulation_id, and run_id
+        self.project_id = self.get_project_id(self.project_name)
+        self.simulation_id = self.get_simulation_id(self.sim_name)
+        self.run_id = self.get_run_id(self.run_name)
 
+    def get_project_id(self, project_name):
+        """
+        Fetch project_id based on project name.
+        """
+        projects = self.project_api.get_projects(limit=1000).to_dict()['embedded']
+        for project in projects:
+            if project['name'] == project_name:
+                print(f"Project found: {project['name']} with ID: {project['project_id']}")
+                return project['project_id']
+        raise Exception(f'Project with name "{project_name}" not found.')
+    
+    def get_simulation_id(self, sim_name):
+        """
+        Fetch simulation_id based on simulation name.
+        """
         simulations = self.simulation_api.get_simulations(self.project_id).to_dict()['embedded']
-        found = None
         for simulation in simulations:
             if simulation['name'] == sim_name:
-                found = simulation
-                print('Simulation found: \n' + str(found['name']))
-                break
-        if found is None:
-            raise Exception('could not find simulation with id: ' + sim_name)
-        self.simulation = found
-        self.simulation_id = found["simulation_id"]
-        #self.simulation_run = sim_sdk.SimulationRun(name= run_name)
+                print(f"Simulation found: {simulation['name']} with ID: {simulation['simulation_id']}")
+                return simulation['simulation_id']
+        raise Exception(f'Simulation with name "{sim_name}" not found.')
+    
+    def get_run_id(self, run_name):
+        """
+        Fetch run_id based on simulation run name.
+        """
+        self.simulation_runs = self.simulation_run_api.get_simulation_runs(self.project_id, self.simulation_id).to_dict()['embedded']
+        for simulation_run in self.simulation_runs:
+            if simulation_run['name'] == run_name:
+                print(f"Simulation run found: {simulation_run['name']} with ID: {simulation_run['run_id']}")
+                return simulation_run['run_id']
+        raise Exception(f'Simulation run with name "{run_name}" not found.')
 
-        self.simulation_runs = self.simulation_run_api.get_simulation_runs(self.project_id, self.simulation_id).to_dict()
-
-        # Iterating through each simulation in the embedded list
-        for simulation in self.simulation_runs['embedded']:
-            if simulation['name'] == run_name:
-                self.run_id = simulation['run_id']
-                break
-        else:
-            print(f"No simulation found with the name '{run_name}'")
-
-        print("Project ID:",self.project_id)
-        print("Simulation ID:",self.simulation_id)
-        print("Run ID:", self.run_id)
-
-        #for later: add functions that allows retreiving the project, simulation and run id of any project
+    def get_simulation_results(self): 
+        """
+        Fetch simulation results for the run.
+        """
         self.simulation_results = self.simulation_run_api.get_simulation_run_results(self.project_id, self.simulation_id, self.run_id)
-        #print(f"results: {self.simulation_results}")
+        print(f"Simulation results fetched for project ID: {self.project_id}, simulation ID: {self.simulation_id}, run ID: {self.run_id}")
 
     def get_probe_point_results(self, name, field = 'T', dir_name = "probe_point_results/"):
         #for later: add code that will run a validation if the probe points don't all have a field 
@@ -255,3 +251,20 @@ class PostProcess:
             external_sum = external_row[-1]
             combined_data.append([time, internal_sum, external_sum])
         return combined_data
+    
+    def get_simulation_run_spec(self):
+        """
+        Fetch the simulation run spec and return it as a dictionary.
+        """
+        try:
+            # Fetch the simulation run spec
+            run_spec = self.simulation_run_api.get_simulation_run_spec(self.project_id, self.simulation_id, self.run_id)
+            
+            # Convert the run spec to a dictionary
+            run_spec_dict = run_spec.to_dict()
+            
+            return run_spec_dict  # Return the run spec as a dictionary
+        
+        except Exception as e:
+            print(f"Error retrieving simulation run spec: {e}")
+            return None

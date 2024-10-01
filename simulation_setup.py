@@ -2,8 +2,7 @@ import time
 import isodate
 
 #import pandas as pd #Don't think we need this for now. Doesn't work in Rhino currently.
-
-from simscale_sdk import ApiException \
+from simscale_sdk import ApiException
 
 from simscale_sdk import  CoupledConjugateHeatTransfer, \
     CoupledConjugateHeatTransferMaterials, TopologicalReference, \
@@ -140,8 +139,6 @@ class SimulationSetup:
             #return [self.multiple_entities[key] for e in entities]
         #else:
             #raise Exception(f"Found {len(self.multiple_entities[key])} entities instead of {number}: {self.multiple_entities[key]}")
-    
- 
     
  
     def set_compressible(self, state = False):
@@ -805,6 +802,31 @@ class SimulationSetup:
         
         self.contact_detection = method
     
+    def get_simulations(self):
+
+        project_id = self.project_id
+        simulation_api = self.simulation_api
+    
+        simulations = simulation_api.get_simulations(project_id).to_dict()['embedded']
+
+        if not simulations:
+                print("No geometries found.")
+                return []
+                
+        # Extract project names
+        sim_names = [sim['name'] for sim in simulations]
+    
+        return sim_names  # Return a list of project names
+        # found = None
+        # for simulation in simulations:
+        #     if simulation['name'] == name:
+        #         found = simulation
+        #         print('Simulation found: \n' + str(found['name']))
+        #         break
+        # if found is None:
+        #     raise Exception('could not find simulation with id: ' + name)
+        # self.simulation = found
+        # self.simulation_id = found["simulation_id"]
 
     def set_simulation_spec(self, simulation_name):
         """Simulation Setup"""
@@ -863,43 +885,7 @@ class SimulationSetup:
         self.field_calculations  = []
         self.mesh_refinement     = []        
         
-    def set_mesh_layer_settings(self, num_of_layers = 3, total_rel_thickness = 0.4, growth_rate = 1.5):
-        
-        self.automatic_layer_settings = sim_sdk.AutomaticLayerOn(type="AUTOMATIC_LAYER_ON",
-                                                                  		number_of_layers= num_of_layers,
-                                                                  		total_relative_thickness= total_rel_thickness,
-                                                                  		layer_type= sim_sdk.FractionalHeight2(
-                                                                  			type="FRACTIONAL_HEIGHT_2",
-                                                                  			growth_rate= growth_rate,)
-                                                                          )
-        
-    def set_advanced_mesh_settings(self, small_feature_tolerance = 5E-5, gap_ref_factor = 0.05, gradation_rate = 1.22): 
-        
-        self.advanced_mesh_settings = sim_sdk.AdvancedSimmetrixFluidSettings(
-                                    small_feature_tolerance= sim_sdk.DimensionalLength(value= small_feature_tolerance,unit="m",),
-                                    gap_elements = gap_ref_factor, global_gradation_rate = gradation_rate)
     
-    
-    def complete_mesh_settings(self, mesh_name ,fineness = 5, physics_based_meshing = True):
-        # Start of mesh operation
-        
-        self.mesh_operation = self.mesh_operation_api.create_mesh_operation(
-            self.project_id,
-            sim_sdk.MeshOperation(
-                name= mesh_name,
-                geometry_id= self.geometry_id,
-                model= sim_sdk.SimmetrixMeshingFluid(
-                    physics_based_meshing= physics_based_meshing, hex_core = True, 
-                    sizing=AutomaticMeshSizingSimmetrix(type="AUTOMATIC_V9",fineness= fineness),
-                    refinements = self.mesh_refinement,
-                    automatic_layer_settings= self.automatic_layer_settings,
-                    advanced_simmetrix_settings = self.advanced_mesh_settings
-                 ),
-                ),
-            )
-        
-        self.mesh_operation_id = self.mesh_operation.mesh_operation_id
-        self.mesh_operation_api.update_mesh_operation( self.project_id, self.mesh_operation_id, self.mesh_operation)
 
     def set_local_element_size_refinement(self, element_size ,name = '',  key_list = []):
         #for later: add a method to add multiple entity selections automatically using get_entities
@@ -921,88 +907,208 @@ class SimulationSetup:
             			),
             		))
         
-    def estimate_mesh_operation(self):
-        
-        # Estimate Mesh operation
-        try:
-            mesh_estimation = self.mesh_operation_api.estimate_mesh_operation(self.project_id, self.mesh_operation_id)
-            # print(f"Mesh operation estimation: {mesh_estimation}")
-            print("*"*10)
-            print("Mesh operation estimation:")
-            print("Number of cells: {lower} - {upper}. Expected is {avg}\n".format(
-                                                               lower =  mesh_estimation.cell_count.interval_min, 
-                                                               upper =  mesh_estimation.cell_count.interval_max,
-                                                               avg   =  mesh_estimation.cell_count.value))
-            
-            print("CPU consumption: {lower} - {upper}. Expected is {avg}\n".format(
-                                                               lower =  mesh_estimation.compute_resource.interval_min, 
-                                                               upper =  mesh_estimation.compute_resource.interval_max,
-                                                               avg   =  mesh_estimation.compute_resource.value))
-            
-            print("Duration: {lower} - {upper}. Expected is {avg}\n".format(
-                                                               lower =  mesh_estimation.duration.interval_min.replace('PT',''), 
-                                                               upper =  mesh_estimation.duration.interval_max.replace('PT', ''),
-                                                               avg   =  mesh_estimation.duration.value.replace('PT','')))          
-            print("*"*10)
-            
-            if mesh_estimation.compute_resource is not None and mesh_estimation.compute_resource.value > 150.0:
-                raise Exception("Too expensive", mesh_estimation)
-        
-            if mesh_estimation.duration is not None:
-                self.mesh_max_runtime = isodate.parse_duration(mesh_estimation.duration.interval_max).total_seconds()
-                self.mesh_max_runtime = max(3600, self.mesh_max_runtime * 2)
-            else:
-                self.mesh_max_runtime = 36000
-                print(f"Mesh operation estimated duration not available, assuming max runtime of {self.mesh_max_runtime} seconds")
-        except ApiException as ae:
-            if ae.status == 422:
-                self.mesh_max_runtime = 36000
-                print(f"Mesh operation estimation not available, assuming max runtime of {self.mesh_max_runtime} seconds")
-            else:
-                raise ae
-                
-    def check_simulation_and_mesh_settings(self):
-        
-        mesh_check = self.mesh_operation_api.check_mesh_operation_setup(self.project_id, self.mesh_operation_id, simulation_id= self.simulation_id)
-        warnings = [entry for entry in mesh_check.entries if entry.severity == "WARNING"]
-        if warnings: 
-            # print(f"Meshing check warnings: {warnings}")
-            print("Meshing check warning: {}\n".format(warnings[0].message))
-        if len(warnings) > 1 :
-            print("*"*10)
-            # print(warnings[1].message)
-            print("\nSimulation setup check warnings: {}".format(warnings[1].message))
-        errors = [entry for entry in mesh_check.entries if entry.severity == "ERROR"]
-        if errors:
-            raise Exception("Simulation check failed", mesh_check)
+    # def set_mesh_layer_settings(self, num_of_layers=3, total_rel_thickness=0.4, growth_rate=1.5):
+    #     """
+    #     Set the mesh layer settings.
+    #     """
+    #     self.automatic_layer_settings = sim_sdk.AutomaticLayerOn(
+    #         type="AUTOMATIC_LAYER_ON",
+    #         number_of_layers=num_of_layers,
+    #         total_relative_thickness=total_rel_thickness,
+    #         layer_type=sim_sdk.FractionalHeight2(type="FRACTIONAL_HEIGHT_2", growth_rate=growth_rate)
+    #     )
 
-    def start_meshing_operation(self, run_state = False):
-        #for later: Figure out how to run the mesh operations in parallel without having to wait for each one to finish
-        # The problem is related with retreiving the mesh id. It is possible that it is only attainable after the mesh operation is completed - investiagte...
+    # def set_advanced_mesh_settings(self, small_feature_tolerance=5E-5, gap_ref_factor=0.05, gradation_rate=1.22):
+    #     """
+    #     Set advanced mesh settings.
+    #     """
+    #     self.advanced_mesh_settings = sim_sdk.AdvancedSimmetrixFluidSettings(
+    #         small_feature_tolerance=sim_sdk.DimensionalLength(value=small_feature_tolerance, unit="m"),
+    #         gap_elements=gap_ref_factor, global_gradation_rate=gradation_rate
+    #     )
+
+    # def complete_mesh_settings(self, mesh_name, fineness=5, physics_based_meshing=True):
+    #     """
+    #     Complete mesh settings and create mesh operation.
+    #     """
+    #     geometry_idx = self.simulation_api.get_simulation(self.project_id, self.simulation_id)
+    #     self.geometry_id = geometry_idx.geometry_id
+    #     print('!!!printing geometry id:')
+    #     print(self.geometry_id)
+    #     self.mesh_operation = self.mesh_operation_api.create_mesh_operation(
+    #         self.project_id,
+    #         sim_sdk.MeshOperation(
+    #             name=mesh_name,
+    #             geometry_id=self.geometry_id,
+    #             model=sim_sdk.SimmetrixMeshingFluid(
+    #                 physics_based_meshing=physics_based_meshing,
+    #                 hex_core=True,
+    #                 sizing=AutomaticMeshSizingSimmetrix(type="AUTOMATIC_V9", fineness=fineness),
+    #                 refinements=self.mesh_refinement,
+    #                 automatic_layer_settings=self.automatic_layer_settings,
+    #                 advanced_simmetrix_settings=self.advanced_mesh_settings
+    #             ),
+    #         ),
+    #     )
+    #     self.mesh_operation_id = self.mesh_operation.mesh_operation_id
+    #     self.mesh_operation_api.update_mesh_operation(self.project_id, self.mesh_operation_id, self.mesh_operation)
+
+
+    # def estimate_mesh_operation(self):
+    #     """
+    #     Estimate the mesh operation.
+    #     """
+    #     try:
+    #         mesh_estimation = self.mesh_operation_api.estimate_mesh_operation(self.project_id, self.mesh_operation_id)
+    #         print("*" * 10)
+    #         print("Mesh operation estimation:")
+    #         print("Number of cells: {lower} - {upper}. Expected is {avg}".format(
+    #             lower=mesh_estimation.cell_count.interval_min,
+    #             upper=mesh_estimation.cell_count.interval_max,
+    #             avg=mesh_estimation.cell_count.value
+    #         ))
+
+    #         print("CPU consumption: {lower} - {upper}. Expected is {avg}".format(
+    #             lower=mesh_estimation.compute_resource.interval_min,
+    #             upper=mesh_estimation.compute_resource.interval_max,
+    #             avg=mesh_estimation.compute_resource.value
+    #         ))
+
+    #         print("Duration: {lower} - {upper}. Expected is {avg}".format(
+    #             lower=mesh_estimation.duration.interval_min.replace('PT', ''),
+    #             upper=mesh_estimation.duration.interval_max.replace('PT', ''),
+    #             avg=mesh_estimation.duration.value.replace('PT', '')))
+    #         print("*" * 10)
+
+    #         if mesh_estimation.compute_resource and mesh_estimation.compute_resource.value > 150.0:
+    #             raise Exception("Too expensive", mesh_estimation)
+
+    #         if mesh_estimation.duration:
+    #             self.mesh_max_runtime = isodate.parse_duration(mesh_estimation.duration.interval_max).total_seconds()
+    #             self.mesh_max_runtime = max(3600, self.mesh_max_runtime * 2)
+    #         else:
+    #             self.mesh_max_runtime = 36000
+    #             print(f"Mesh operation estimated duration not available, assuming max runtime of {self.mesh_max_runtime} seconds")
+    #     except ApiException as e:
+    #         if e.status == 422:
+    #             self.mesh_max_runtime = 36000
+    #             print(f"Mesh operation estimation not available, assuming max runtime of {self.mesh_max_runtime} seconds")
+    #         else:
+    #             raise e
+
+    # def start_meshing_operation(self, run_state=False):
+    #     """
+    #     Start the meshing operation and wait until it is finished.
+    #     """
+    #     try:
+    #         if run_state:
+    #             self.mesh_operation_api.start_mesh_operation(self.project_id, self.mesh_operation_id, simulation_id=self.simulation_id)
+    #         else:
+    #             self.mesh_operation_api.start_mesh_operation(self.project_id, self.mesh_operation_id, simulation_id=self.simulation_id)
+    #             mesh_operation_start = time.time()
+    #             self.mesh_operation = self.mesh_operation_api.get_mesh_operation(self.project_id, self.mesh_operation_id)
+
+    #             while self.mesh_operation.status not in ("FINISHED", "CANCELED", "FAILED"):
+    #                 if time.time() > mesh_operation_start + self.mesh_max_runtime:
+    #                     raise TimeoutError("Meshing took too long to finish.")
+    #                 time.sleep(30)
+    #                 self.mesh_operation = self.mesh_operation_api.get_mesh_operation(self.project_id, self.mesh_operation_id)
+    #                 print(f"Meshing run status: {self.mesh_operation.status} - {self.mesh_operation.progress}")
+                
+    #             self.simulation_spec = self.simulation_api.get_simulation(self.project_id, self.simulation_id)
+    #             self.simulation_spec.mesh_id = self.mesh_operation.mesh_id
+    #             self.simulation_api.update_simulation(self.project_id, self.simulation_id, self.simulation_spec)
+    #     except ApiException as e:
+    #         print(f"Exception when starting meshing operation: {e}")
+    #         raise
         
-        if run_state :
-            self.mesh_operation_api.start_mesh_operation(self.project_id, self.mesh_operation_id, simulation_id= self.simulation_id)
-        
-        else: 
-            
-            self.mesh_operation_api.start_mesh_operation(self.project_id, self.mesh_operation_id, simulation_id= self.simulation_id)            
-            # Wait until the meshing operation is complete
-            self.mesh_operation = self.mesh_operation_api.get_mesh_operation(self.project_id, self.mesh_operation_id)
-            mesh_operation_start = time.time()
-            while self.mesh_operation.status not in ("FINISHED", "CANCELED", "FAILED"):
-                if time.time() > mesh_operation_start + self.mesh_max_runtime:
-                    raise TimeoutError()
-                time.sleep(30)
-                self.mesh_operation = self.mesh_operation_api.get_mesh_operation(self.project_id, self.mesh_operation_id)
-                print(f"Meshing run status: {self.mesh_operation.status} - {self.mesh_operation.progress}")
-            
-            self.mesh_operation = self.mesh_operation_api.get_mesh_operation(self.project_id, self.mesh_operation_id)
-            # print(f"final mesh_operation: {self.mesh_operation}")
-            
-            # Get the simulation spec and update it with mesh_id from the previous mesh operation
-            self.simulation_spec = self.simulation_api.get_simulation(self.project_id, self.simulation_id)
-            self.simulation_spec.mesh_id = self.mesh_operation.mesh_id
-            self.simulation_api.update_simulation(self.project_id, self.simulation_id, self.simulation_spec)
+    # def find_simulation(self, name):
+    #     """
+    #     Find the simulation by name.
+    #     """
+    #     try:
+    #         simulations = self.simulation_api.get_simulations(self.project_id).to_dict()['embedded']
+    #         found = None
+    #         for simulation in simulations:
+    #             if simulation['name'] == name:
+    #                 found = simulation
+    #                 print(f'Simulation found: {found["name"]}')
+    #                 break
+    #         if found is None:
+    #             raise Exception(f"Could not find simulation with name: {name}")
+    #         self.simulation = found
+    #         self.simulation_id = found["simulation_id"]
+    #     except ApiException as e:
+    #         print(f"Exception when fetching simulations: {e}")
+    #         raise
+
+    # def estimate_simulation(self, maximum_cpu_consumption_limit=200):
+    #     """
+    #     Estimate the simulation setup.
+    #     """
+    #     try:
+    #         estimation = self.simulation_api.estimate_simulation_setup(self.project_id, self.simulation_id)
+    #         print("*" * 10)
+    #         print("CPU consumption: {lower} - {upper}. Expected is {avg}".format(
+    #             lower=estimation.compute_resource.interval_min,
+    #             upper=estimation.compute_resource.interval_max,
+    #             avg=estimation.compute_resource.value
+    #         ))
+
+    #         print("Duration: {lower} - {upper}. Expected is {avg}".format(
+    #             lower=estimation.duration.interval_min.replace('PT', ''),
+    #             upper=estimation.duration.interval_max.replace('PT', ''),
+    #             avg=estimation.duration.value.replace('PT', '')))
+    #         print("*" * 10)
+
+    #         if estimation.compute_resource and estimation.compute_resource.value > maximum_cpu_consumption_limit:
+    #             raise Exception("Too expensive", estimation)
+
+    #         if estimation.duration:
+    #             self.sim_max_run_time = isodate.parse_duration(estimation.duration.interval_max).total_seconds()
+    #             self.sim_max_run_time = max(3600, self.sim_max_run_time * 2)
+    #         else:
+    #             self.sim_max_run_time = 36000
+    #             print(f"Simulation estimated duration not available, assuming max runtime of {self.sim_max_run_time} seconds")
+    #     except ApiException as e:
+    #         print(f"Exception when estimating simulation: {e}")
+    #         raise
+
+    # def create_simulation_run(self):
+    #     """
+    #     Create a new simulation run with the given simulation run name.
+    #     """
+    #     try:
+    #         self.simulation_run = sim_sdk.SimulationRun(name=self.simulation_run_name)
+    #         self.simulation_run = self.simulation_run_api.create_simulation_run(self.project_id, self.simulation_id, self.simulation_run)
+    #         self.run_id = self.simulation_run.run_id
+    #         print(f"Simulation run ID: {self.run_id}")
+    #     except ApiException as e:
+    #         print(f"Exception when creating simulation run: {e}")
+    #         raise
+
+    # def start_simulation_run(self, wait_for_results=True):
+    #     """
+    #     Start the simulation run and optionally wait for the results to complete.
+    #     """
+    #     try:
+    #         self.simulation_run_api.start_simulation_run(self.project_id, self.simulation_id, self.run_id)
+    #         if wait_for_results:
+    #             simulation_run_start = time.time()
+    #             self.simulation_run = self.simulation_run_api.get_simulation_run(self.project_id, self.simulation_id, self.run_id)
+
+    #             while self.simulation_run.status not in ("FINISHED", "CANCELED", "FAILED"):
+    #                 if time.time() > simulation_run_start + self.sim_max_run_time:
+    #                     raise TimeoutError("Simulation took too long to finish.")
+    #                 time.sleep(30)
+    #                 self.simulation_run = self.simulation_run_api.get_simulation_run(self.project_id, self.simulation_id, self.run_id)
+    #                 print(f"Simulation run status: {self.simulation_run.status} - {self.simulation_run.progress}")
+    #     except ApiException as e:
+    #         print(f"Exception when starting simulation run: {e}")
+    #         raise
+    
+
+
 
 
     
